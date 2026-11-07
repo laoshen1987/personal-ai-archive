@@ -14,7 +14,7 @@
 
 以上为公开元数据，已在本文件所有 URL、OpenAPI schema 与配置片段中替换为真实值。文件中剩余的 `{{...}}` **仅用于待填写的个人信息字段**，不得批量替换。各 AI 平台的启用状态、验证证据与剩余一次性动作，以 `README.md` 搭建报告为准。
 
-**本方案不创建、也不需要 PAT**：文件写入走 GitHub 连接器（OAuth）或浏览器 OAuth 登录；任何真实令牌都不得写入本仓库或任何 commit。
+**本方案不创建、也不需要 PAT**：远端写入由 Git Credential Manager 的浏览器 OAuth（`git push`）完成；连接器因 App 权限不足未参与写入。任何真实令牌都不得写入本仓库或任何 commit。
 
 ## 1. 读取侧
 
@@ -147,12 +147,12 @@ Local 路径也可走 OAuth device flow，无需分发令牌。二者均为**平
 
 ### 1.5 WorkBuddy
 
-证据等级说明：**未找到 WorkBuddy 官方公开产品文档页可直连复核，以下路径来自第三方教程**。本机实测（2026-11-07）：官方 GitHub 连接器已连接并启用，其 OAuth 身份可读写本仓库；`~/.workbuddy/mcp.json` 未创建，无需自建 MCP 配置。
+证据等级说明：**未找到 WorkBuddy 官方公开产品文档页可直连复核，以下路径来自第三方教程**。本机实测（2026-11-07）：官方 GitHub 连接器已连接并启用，可读取账号信息，但写入本仓库返回 403；实际推送改走 GCM 浏览器 OAuth。`~/.workbuddy/mcp.json` 未创建，无需自建 MCP 配置。
 
 1. **首选（零配置、可验证）**：公开仓库 raw URL 直读，直接在对话中给出 URL 即可，无需任何配置文件。
    `https://raw.githubusercontent.com/laoshen1987/personal-ai-archive/main/memory/memory.md`
 2. **不推荐（需 PAT）**：自建 `~/.workbuddy/mcp.json` 配 `@modelcontextprotocol/server-github` + `GITHUB_PERSONAL_ACCESS_TOKEN`。与本次「零 PAT」决策冲突，且无官方文档保证生效。
-3. **已验证**：官方 GitHub 连接器走 OAuth 授权，本档案的远端写入即由该通道完成，全程无需 PAT。
+3. **连接器实测边界**：官方 GitHub 连接器已连接，但其 App 令牌对新建仓库无 `Contents: write` 权限（`PUT /contents` 返回 403），故本次推送未使用该通道，全程无需 PAT。
 
 ## 2. 写入侧
 
@@ -323,7 +323,7 @@ git -c user.name="Personal AI Archive" -c user.email="archive@users.noreply.gith
 | --- | --- | --- | --- |
 | 生成 5 目录、7 个 Markdown 文件 | 本地执行器 + GitHub 连接器 | — | **是** |
 | 网页新建空公开仓库 | 用户 | 是 | 否（App 无建仓权限） |
-| 推送 7 个文件到 GitHub | AI（GitHub 连接器 OAuth） | 否 | **是** |
+| 推送 7 个文件到 GitHub | AI（GCM 浏览器 OAuth / `git push`） | 否 | **是** |
 | 启用分支保护 | 用户（网页或 API） | 是 | 否 |
 | 在 ChatGPT Actions 粘贴 OpenAPI | 用户 | 是 | 否 |
 | 在 Claude 配 MCP / 连接器 | 用户 | 是 | 否 |
@@ -335,19 +335,20 @@ git -c user.name="Personal AI Archive" -c user.email="archive@users.noreply.gith
 
 ## 7. 部署与校验（全程无需 PAT）
 
-### 7.1 实际采用的路径：GitHub 连接器（OAuth）
+### 7.1 实际采用的路径：GCM 浏览器 OAuth（`git push`）
 
-本档案通过 GitHub 连接器的 OAuth 身份写入文件，**无需创建 PAT、无需 `git push`、无需浏览器交互推送**。连接器提供建仓、批量写文件、读取内容与提交历史等能力。
+本档案最终通过 Git Credential Manager 的浏览器 OAuth 完成 `git push`，**无需创建 PAT**，并将本地 6 条提交与 7 个文件完整同步到远端 `main`。
 
-**权限边界（实测）**：连接器的 GitHub App 令牌不含账号级「创建仓库」权限，`POST /user/repos` 返回 `403 Resource not accessible by integration`；分支保护接口亦未暴露。因此「网页新建空仓库」与「网页启用分支保护」这两步仍由用户各点击一次，其余全部由 AI 完成。
+**连接器实测边界（如实记录）**：官方 GitHub 连接器已连接，`get_me` 可读取账号，但 `POST /user/repos` 与 `PUT /repos/.../contents/{path}` 均返回 `403 Resource not accessible by integration`，分支保护接口亦未暴露。因此连接器未用于任何写操作。
 
-仓库由用户在网页创建（`https://github.com/new?name=personal-ai-archive`，选 Public、**不勾选** "Initialize with README"）；该动作不可由 App 代劳。实测连接器授权范围已覆盖该仓库（`get_file_contents` 返回 `409 Git Repository is empty` 而非 403）。若连接器安装时选择的是 "Only select repositories"，新仓库需在 GitHub → Settings → Applications → Installed GitHub Apps → Configure 中显式加入授权范围，否则写入会返回 403。
+**误判修正**：空仓库的 `409 Git Repository is empty` 匿名调用同样会返回，不能据此推断 App 授权已覆盖该仓库。实测写入 403 才确认权限不足，遂改走 GCM 路径。
 
-文件写入由 AI 通过连接器完成，每次写入自动生成 commit；此过程不需要任何令牌出现在文件、命令或会话输出中。
+**执行要点**：本机 `credential.helper=manager`（system 级），允许 GCM 交互后 `git -c http.version=HTTP/1.1 push -u origin main` 一次成功；若强制非交互（`GIT_TERMINAL_PROMPT=0`），会返回 `Empty reply from server`。每次 `git commit` 与 `git push` 均保留完整提交链。
 
-### 7.2 备用路径：浏览器 OAuth 推送
 
-若不使用连接器，可用 Git Credential Manager 的 **Sign in with your browser**（本机 `credential.helper=manager` 已配置）或 GitHub Desktop 推送，同样无需创建 PAT：
+### 7.2 从零复现命令
+
+使用 Git Credential Manager 的 **Sign in with your browser**（本机 `credential.helper=manager` 已配置）或 GitHub Desktop 推送，同样无需创建 PAT：
 
 ```bash
 cd personal-ai-archive
