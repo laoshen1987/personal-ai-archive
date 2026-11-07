@@ -13,6 +13,7 @@
 | 目录 / 文件 | 5 个目录 / 7 个 Markdown 文件 |
 | 目标可见性 / 默认分支 | 公开 / `main` |
 | 唯一规则入口 | `ai-integration.md` |
+| 本地 Git | 已初始化（`main` 分支），初始提交 `dab2e7b`；remote 待配置 |
 
 ## 1. 逐项状态清单
 
@@ -29,7 +30,7 @@
 | 3' | Muse / Dots 偏好同步 | `[RESERVED]` | 未找到公开可验证 API；仅 `disabled: true` 预留位，无真实端点 |
 | 3' ' | AI 完成任务后自动回写规则 | `[LOCAL-OK]` 规则 / `[PENDING]` 生效 | 映射表、追加条目格式、硬约束、冲突兜底已定义；执行需平台侧凭据与配置 |
 | 4 | 版本保护（防误删/防篡改） | `[LOCAL-OK]` 配置 / `[PENDING]` 启用 | 分支保护 JSON 与网页设置步骤已给出；GitHub 侧尚未设置 |
-| 4' | 所有修改自动生成提交记录 | `[PENDING]` | 本地未初始化 Git；推送后由 Git 原生生成，Contents API 每次 PUT 亦生成 commit |
+| 4' | 所有修改自动生成提交记录 | `[LOCAL-OK]` 本地 / `[PENDING]` 远端 | 本地已初始化并完成初始提交 `dab2e7b`（7 文件 / 636 行）；推送后远端同步生成历史 |
 | 4' ' | 一键回退至任意历史版本 | `[LOCAL-OK]` 命令 / `[PENDING]` 执行 | `git revert` 命令已提供，保留完整审计链 |
 | 5 | 搭建报告 | `[LOCAL-OK]` | 本文件 |
 
@@ -100,7 +101,7 @@ git -c user.name="Personal AI Archive" -c user.email="archive@users.noreply.gith
 ## 7. 推送与启用（一次性动作）
 
 1. 在 GitHub 网页新建公开仓库 `personal-ai-archive`，**不要**勾选 "Initialize with README"。
-2. 按 `ai-integration.md` 第 7 节替换 `{{OWNER}}` / `{{DEFAULT_BRANCH}}`，`git init -b main` 并提交。
+2. `git init -b main` 与本地初始提交**已执行**；待填入真实登录名后替换 `{{OWNER}}` / `{{DEFAULT_BRANCH}}` 并 `git commit --amend`。
 3. 用 GitHub Desktop 或 `git push` 的浏览器 OAuth 登录推送（**无需创建 PAT**）。
 4. 仓库 Settings → Branches → Add branch protection rule：填 `main`，勾选「Do not allow bypassing the above settings」，不勾「Require a pull request before merging」，不勾「Allow force pushes / Allow deletions」。
 5. 按第 4 节在需要的 AI 平台侧各配置一次。
@@ -109,12 +110,12 @@ git -c user.name="Personal AI Archive" -c user.email="archive@users.noreply.gith
 
 本地只读自检判据（执行器已在本次会话中执行，结果在会话中回显）：
 
-- 目录数 = 5，Markdown 文件数 = 7，无额外目录或文件。
+- 目录数 = 5，Markdown 文件数 = 7，无额外交付文件（不计 `.git/` 元数据）。
 - 每个 `.md` 首行匹配 `^# AI-(READONLY|APPEND|CONFIG|REPORT): `，第二行含 `AI-META: schema=pai-archive/v1;`。
 - 三个点名占位符 `{{我的职业}}`、`{{常用沟通风格}}`、`{{核心决策原则}}` 均命中。
 - 每个文件含 `## 自动回写日志（AI-APPEND / 仅追加）` 与 `PAI:APPEND` 锚点。
 - 全文扫描无 `ghp_` / `github_pat_` 形式的真实令牌字符串。
-- Git 侧证据（commit 数、保护返回体、raw URL 200）**本次不适用**：需推送后才能产生，届时按 `ai-integration.md` 第 7 节的校验命令复核。
+- 本地 Git 证据：初始提交 `dab2e7b`（7 文件 / 636 行）。远端证据（protection 返回体、raw URL 200）需推送后按 `ai-integration.md` 第 7 节校验。
 
 ## 9. 自动回写日志（AI-APPEND / 仅追加）
 <!-- PAI:APPEND:START -->
