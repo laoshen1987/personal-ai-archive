@@ -3,14 +3,18 @@
 
 > 说明：本文件是 AI 读取、写入与回写本档案的**唯一规则入口**。配置变更需用户显式确认。文中 `<...>` 与 `{{...}}` 均为占位符；**任何真实令牌都不得写入本仓库或任何 commit**。
 
-## 0. 当前交付状态（如实）
+## 0. 仓库坐标（公开元数据）
 
-本次为**本地生成模式**：未向执行器提供 GitHub PAT，档案已在工作区生成，**尚未推送到 GitHub**。因此：
+| 项 | 值 |
+| --- | --- |
+| GitHub 登录名 | `laoshen1987` |
+| 仓库 | `https://github.com/laoshen1987/personal-ai-archive` |
+| 默认分支 | `main` |
+| 可见性 | 公开 |
 
-- 所有 `{{OWNER}}` / `{{DEFAULT_BRANCH}}` 仍是占位符，需在推送前替换为真实值（这两项是公开元数据，非个人信息）。
-- 第 1–3 节的读取/写入配置需推送后才能真正生效。
-- 第 5 节的分支保护需推送后在 GitHub 网页或 API 侧一次性启用。
-- 推送与保护可**完全不创建 PAT**：走浏览器 OAuth 登录（见第 7 节）。
+以上为公开元数据，已在本文件所有 URL、OpenAPI schema 与配置片段中替换为真实值。文件中剩余的 `{{...}}` **仅用于待填写的个人信息字段**，不得批量替换。各 AI 平台的启用状态、验证证据与剩余一次性动作，以 `README.md` 搭建报告为准。
+
+**本方案不创建、也不需要 PAT**：文件写入走 GitHub 连接器（OAuth）或浏览器 OAuth 登录；任何真实令牌都不得写入本仓库或任何 commit。
 
 ## 1. 读取侧
 
@@ -18,14 +22,14 @@
 
 | 用途 | 方式 | 认证 |
 | --- | --- | --- |
-| 免认证快速读取 | `https://raw.githubusercontent.com/{{OWNER}}/personal-ai-archive/{{DEFAULT_BRANCH}}/{path}` | 公开仓库无需认证 |
-| 权威即时读取 | `GET https://api.github.com/repos/{{OWNER}}/personal-ai-archive/contents/{path}` | 免认证 60 次/小时；带凭据 5000 次/小时 |
+| 免认证快速读取 | `https://raw.githubusercontent.com/laoshen1987/personal-ai-archive/main/{path}` | 公开仓库无需认证 |
+| 权威即时读取 | `GET https://api.github.com/repos/laoshen1987/personal-ai-archive/contents/{path}` | 免认证 60 次/小时；带凭据 5000 次/小时 |
 
 raw 域名有 CDN 缓存（写入后可能滞后数分钟）。凡需要「读取后回写」，一律先用 Contents API 取最新内容与 `sha`：
 
 ```bash
 curl -sS -H "Accept: application/vnd.github+json" \
-  "https://api.github.com/repos/{{OWNER}}/personal-ai-archive/contents/memory/memory.md?ref={{DEFAULT_BRANCH}}"
+  "https://api.github.com/repos/laoshen1987/personal-ai-archive/contents/memory/memory.md?ref=main"
 ```
 
 返回 JSON 中 `content` 为 Base64，`sha` 为该文件当前 blob SHA（回写必需）。加 `Accept: application/vnd.github.raw` 可直接取原文。
@@ -46,7 +50,7 @@ curl -sS -H "Accept: application/vnd.github+json" \
 
 ### 1.3 ChatGPT — Custom GPT Actions
 
-在 GPT 配置页 → Actions → 粘贴以下 OpenAPI 3.1 schema。**粘贴前必须把 `{{OWNER}}` 替换为真实 GitHub 登录名**（花括号不是合法的 OpenAPI 路径语法）。
+在 GPT 配置页 → Actions → 粘贴以下 OpenAPI 3.1 schema。**粘贴前必须把 `laoshen1987` 替换为真实 GitHub 登录名**（花括号不是合法的 OpenAPI 路径语法）。
 
 ```yaml
 openapi: 3.1.0
@@ -56,7 +60,7 @@ info:
 servers:
   - url: https://api.github.com
 paths:
-  /repos/{{OWNER}}/personal-ai-archive/contents/memory/memory.md:
+  /repos/laoshen1987/personal-ai-archive/contents/memory/memory.md:
     get:
       operationId: readMemory
       summary: 读取 memory（公开仓库免认证）
@@ -146,7 +150,7 @@ Local 路径也可走 OAuth device flow，无需分发令牌。二者均为**平
 证据等级说明：**未找到 WorkBuddy 官方公开产品文档页可直连复核，以下路径来自第三方教程**；本机实测未安装 GitHub 连接器，`C:\Users\lawso\.workbuddy\mcp.json` 不存在。
 
 1. **首选（零配置、可验证）**：公开仓库 raw URL 直读，直接在对话中给出 URL 即可，无需任何配置文件。
-   `https://raw.githubusercontent.com/{{OWNER}}/personal-ai-archive/{{DEFAULT_BRANCH}}/memory/memory.md`
+   `https://raw.githubusercontent.com/laoshen1987/personal-ai-archive/main/memory/memory.md`
 2. **次选（实验性，待验证）**：自建 `C:\Users\lawso\.workbuddy\mcp.json`，配 `@modelcontextprotocol/server-github` + `GITHUB_PERSONAL_ACCESS_TOKEN`。属用户侧一次性动作，无官方文档保证生效。
 3. **备选**：日后若启用官方 GitHub 连接器，走 OAuth 授权。
 
@@ -155,7 +159,7 @@ Local 路径也可走 OAuth device flow，无需分发令牌。二者均为**平
 ### 2.1 Contents API PUT 规范
 
 ```
-PUT https://api.github.com/repos/{{OWNER}}/personal-ai-archive/contents/{path}
+PUT https://api.github.com/repos/laoshen1987/personal-ai-archive/contents/{path}
 Accept: application/vnd.github+json
 Authorization: Bearer <具备写权限的凭据>
 X-GitHub-Api-Version: 2022-11-28
@@ -165,7 +169,7 @@ Content-Type: application/json; charset=utf-8
   "message": "pai: append memory/memory.md | by Claude | task=8f3a1c2d | 2026-11-07T14:02:11Z",
   "content": "<Base64(UTF-8 原文，单行，无换行，无 BOM)>",
   "sha": "<更新已存在文件时必填：该文件当前 blob sha>",
-  "branch": "{{DEFAULT_BRANCH}}"
+  "branch": "main"
 }
 ```
 
@@ -178,7 +182,7 @@ Content-Type: application/json; charset=utf-8
 
 `pai: <create|append|update|revert> <path> | by <执行者> | task=<8位标识> | <ISO8601 UTC>`
 
-便于在 `GET /repos/{{OWNER}}/personal-ai-archive/commits` 中按目录、来源 AI、时间定位历史版本。
+便于在 `GET /repos/laoshen1987/personal-ai-archive/commits` 中按目录、来源 AI、时间定位历史版本。
 
 ### 2.3 强制 read-modify-write
 
@@ -261,7 +265,7 @@ x-pai-reserved-sync:
 
 ### 5.1 分支保护配置
 
-`PUT /repos/{{OWNER}}/personal-ai-archive/branches/{{DEFAULT_BRANCH}}/protection` 请求体：
+`PUT /repos/laoshen1987/personal-ai-archive/branches/main/protection` 请求体：
 
 ```json
 {
@@ -294,7 +298,7 @@ Git 提交历史是版本保护的主体：每次 `git commit`、网页编辑文
 先定位历史版本：
 
 ```bash
-curl -sS "https://api.github.com/repos/{{OWNER}}/personal-ai-archive/commits?per_page=100"
+curl -sS "https://api.github.com/repos/laoshen1987/personal-ai-archive/commits?per_page=100"
 git log --date=iso --pretty='%h | %ad | %s'
 ```
 
@@ -328,38 +332,38 @@ git -c user.name="Personal AI Archive" -c user.email="archive@users.noreply.gith
 
 **工程结论**：「用户零配置零手动」不成立——首次授权与平台侧配置不可省略。准确表述为「一次性授权与配置 ⇒ 之后可全自动回写」。
 
-## 7. 本地模式的推送与校验（可完全不创建 PAT）
+## 7. 部署与校验（全程无需 PAT）
 
-GitHub 不接受账号密码做 Git / API 认证，但**浏览器 OAuth 登录可替代手动创建 PAT**。
+### 7.1 实际采用的路径：GitHub 连接器（OAuth）
+
+本档案通过 GitHub 连接器的 OAuth 身份写入文件，**无需创建 PAT、无需 `git push`、无需浏览器交互推送**。连接器提供建仓、批量写文件、读取内容与提交历史等能力。
+
+**权限边界（实测）**：连接器的 GitHub App 令牌不含账号级「创建仓库」权限，`POST /user/repos` 返回 `403 Resource not accessible by integration`；分支保护接口亦未暴露。因此「网页新建空仓库」与「网页启用分支保护」这两步仍由用户各点击一次，其余全部由 AI 完成。
+
+前置一次性动作：打开 `https://github.com/new?name=personal-ai-archive`，确认 **Public**、**不勾选** "Initialize with README"，创建仓库。若连接器安装时选择的是 "Only select repositories"，还需在 GitHub → Settings → Applications → Installed GitHub Apps → Configure 中把该仓库加入授权范围，否则写入会返回 403。
+
+之后由 AI 通过连接器一次性推送 7 个 Markdown 文件，每次写入自动生成 commit；此过程不需要任何令牌出现在文件、命令或会话输出中。
+
+### 7.2 备用路径：浏览器 OAuth 推送
+
+若不使用连接器，可用 Git Credential Manager 的 **Sign in with your browser**（本机 `credential.helper=manager` 已配置）或 GitHub Desktop 推送，同样无需创建 PAT：
 
 ```bash
-cd <本地仓库目录>
-
-# 1) 替换公开元数据占位符（Windows Git Bash / macOS / Linux 均可用）
-# 这是一次性命令：执行后本文件中的 {{OWNER}} 字面量也会被替换，无需重跑
-OWNER="你的GitHub登录名"
-grep -rl '{{OWNER}}' . --include='*.md' | xargs sed -i "s/{{OWNER}}/$OWNER/g"
-grep -rl '{{DEFAULT_BRANCH}}' . --include='*.md' | xargs sed -i 's/{{DEFAULT_BRANCH}}/main/g'
-
-# 2) 初始化并首次提交
+cd personal-ai-archive
 git init -b main
 git add .
 git -c user.name="Personal AI Archive" -c user.email="archive@users.noreply.github.com" \
-    commit -m "pai: initial archive | by user | $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-# 3) 在 GitHub 网页新建公开仓库 personal-ai-archive，不要勾选 Initialize with README
-git remote add origin "https://github.com/$OWNER/personal-ai-archive.git"
+    commit -m "pai: initial archive | by user | <ISO8601>"
+git remote add origin "https://github.com/laoshen1987/personal-ai-archive.git"
 git push -u origin main
 ```
 
-`git push` 时选择 **Sign in with your browser**（Git Credential Manager），或用 **GitHub Desktop** 登录并推送，全程无需手动创建 PAT。随后按 5.1 节网页路径启用分支保护。
-
-推送后只读校验：
+### 7.3 推送后只读校验
 
 ```bash
-curl -sS "https://api.github.com/repos/$OWNER/personal-ai-archive/contents/" | grep '"name"'
-curl -sS "https://api.github.com/repos/$OWNER/personal-ai-archive/branches/main/protection" | grep -E 'enforce_admins|allow_force_pushes|allow_deletions'
-curl -sS -o /dev/null -w "%{http_code}\n" "https://raw.githubusercontent.com/$OWNER/personal-ai-archive/main/memory/memory.md"
+curl -sS "https://api.github.com/repos/laoshen1987/personal-ai-archive/contents/" | grep '"name"'
+curl -sS "https://api.github.com/repos/laoshen1987/personal-ai-archive/branches/main/protection" | grep -E 'enforce_admins|allow_force_pushes|allow_deletions'
+curl -sS -o /dev/null -w "%{http_code}\n" "https://raw.githubusercontent.com/laoshen1987/personal-ai-archive/main/memory/memory.md"
 ```
 
 ## 8. 自动回写日志（AI-APPEND / 仅追加）
