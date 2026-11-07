@@ -50,7 +50,7 @@ curl -sS -H "Accept: application/vnd.github+json" \
 
 ### 1.3 ChatGPT — Custom GPT Actions
 
-在 GPT 配置页 → Actions → 粘贴以下 OpenAPI 3.1 schema。**粘贴前必须把 `laoshen1987` 替换为真实 GitHub 登录名**（花括号不是合法的 OpenAPI 路径语法）。
+在 GPT 配置页 → Actions → 粘贴以下 OpenAPI 3.1 schema。路径中的登录名已填为 `laoshen1987`，可直接使用；若迁移到其它账号，需同步替换。
 
 ```yaml
 openapi: 3.1.0
@@ -147,12 +147,12 @@ Local 路径也可走 OAuth device flow，无需分发令牌。二者均为**平
 
 ### 1.5 WorkBuddy
 
-证据等级说明：**未找到 WorkBuddy 官方公开产品文档页可直连复核，以下路径来自第三方教程**；本机实测未安装 GitHub 连接器，`C:\Users\lawso\.workbuddy\mcp.json` 不存在。
+证据等级说明：**未找到 WorkBuddy 官方公开产品文档页可直连复核，以下路径来自第三方教程**。本机实测（2026-11-07）：官方 GitHub 连接器已连接并启用，其 OAuth 身份可读写本仓库；`~/.workbuddy/mcp.json` 未创建，无需自建 MCP 配置。
 
 1. **首选（零配置、可验证）**：公开仓库 raw URL 直读，直接在对话中给出 URL 即可，无需任何配置文件。
    `https://raw.githubusercontent.com/laoshen1987/personal-ai-archive/main/memory/memory.md`
-2. **次选（实验性，待验证）**：自建 `C:\Users\lawso\.workbuddy\mcp.json`，配 `@modelcontextprotocol/server-github` + `GITHUB_PERSONAL_ACCESS_TOKEN`。属用户侧一次性动作，无官方文档保证生效。
-3. **备选**：日后若启用官方 GitHub 连接器，走 OAuth 授权。
+2. **不推荐（需 PAT）**：自建 `~/.workbuddy/mcp.json` 配 `@modelcontextprotocol/server-github` + `GITHUB_PERSONAL_ACCESS_TOKEN`。与本次「零 PAT」决策冲突，且无官方文档保证生效。
+3. **已验证**：官方 GitHub 连接器走 OAuth 授权，本档案的远端写入即由该通道完成，全程无需 PAT。
 
 ## 2. 写入侧
 
@@ -321,8 +321,9 @@ git -c user.name="Personal AI Archive" -c user.email="archive@users.noreply.gith
 
 | 动作 | 执行方 | 是否一次性 | 是否仓库侧自动完成 |
 | --- | --- | --- | --- |
-| 生成 5 目录、7 个 Markdown 文件 | 本地执行器 | — | **已完成（本地）** |
-| 推送到 GitHub | 用户 | 是 | 否 |
+| 生成 5 目录、7 个 Markdown 文件 | 本地执行器 + GitHub 连接器 | — | **是** |
+| 网页新建空公开仓库 | 用户 | 是 | 否（App 无建仓权限） |
+| 推送 7 个文件到 GitHub | AI（GitHub 连接器 OAuth） | 否 | **是** |
 | 启用分支保护 | 用户（网页或 API） | 是 | 否 |
 | 在 ChatGPT Actions 粘贴 OpenAPI | 用户 | 是 | 否 |
 | 在 Claude 配 MCP / 连接器 | 用户 | 是 | 否 |
@@ -340,9 +341,9 @@ git -c user.name="Personal AI Archive" -c user.email="archive@users.noreply.gith
 
 **权限边界（实测）**：连接器的 GitHub App 令牌不含账号级「创建仓库」权限，`POST /user/repos` 返回 `403 Resource not accessible by integration`；分支保护接口亦未暴露。因此「网页新建空仓库」与「网页启用分支保护」这两步仍由用户各点击一次，其余全部由 AI 完成。
 
-前置一次性动作：打开 `https://github.com/new?name=personal-ai-archive`，确认 **Public**、**不勾选** "Initialize with README"，创建仓库。若连接器安装时选择的是 "Only select repositories"，还需在 GitHub → Settings → Applications → Installed GitHub Apps → Configure 中把该仓库加入授权范围，否则写入会返回 403。
+仓库由用户在网页创建（`https://github.com/new?name=personal-ai-archive`，选 Public、**不勾选** "Initialize with README"）；该动作不可由 App 代劳。实测连接器授权范围已覆盖该仓库（`get_file_contents` 返回 `409 Git Repository is empty` 而非 403）。若连接器安装时选择的是 "Only select repositories"，新仓库需在 GitHub → Settings → Applications → Installed GitHub Apps → Configure 中显式加入授权范围，否则写入会返回 403。
 
-之后由 AI 通过连接器一次性推送 7 个 Markdown 文件，每次写入自动生成 commit；此过程不需要任何令牌出现在文件、命令或会话输出中。
+文件写入由 AI 通过连接器完成，每次写入自动生成 commit；此过程不需要任何令牌出现在文件、命令或会话输出中。
 
 ### 7.2 备用路径：浏览器 OAuth 推送
 
