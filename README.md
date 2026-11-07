@@ -32,7 +32,7 @@
 | 3' | Muse / Dots 偏好同步 | `[RESERVED]` | 未找到公开可验证 API；仅 `disabled: true` 预留位，无真实端点 |
 | 3' ' | AI 完成任务后自动回写规则 | `[AUTO-OK]` 规则 / `[USER-ONCE]` 生效 | 映射表、追加条目格式、硬约束、冲突兜底已定义；执行需平台侧配置 |
 | 4 | 版本保护（防误删/防篡改） | `[USER-ONCE]` | 分支保护 JSON 与网页步骤已给出；**GitHub 侧尚未启用**，需你点击一次（见第 7 节） |
-| 4' | 所有修改自动生成提交记录 | `[AUTO-OK]` | 首次推送同步 6 条 commit；本报告定稿产生第 7 条 |
+| 4' | 所有修改自动生成提交记录 | `[AUTO-OK]` | 首次推送同步 6 条 commit；此后每次文档更新均追加新 commit（见 `/commits`） |
 | 4' ' | 一键回退至任意历史版本 | `[AUTO-OK]` 命令 | `git revert --no-commit <SHA>..HEAD`，保留完整审计链，与分支保护兼容 |
 | 5 | 搭建报告 | `[AUTO-OK]` | 本文件，含远端验证证据 |
 
@@ -117,14 +117,14 @@ git -c user.name="Personal AI Archive" -c user.email="archive@users.noreply.gith
 
 - 仓库：`laoshen1987/personal-ai-archive`，`private:false`，`default_branch:main`。
 - 递归 tree 返回 7 个 `.md`，`truncated:false`：`README.md`、`ai-integration.md`、`identity/identity.md`、`workflow/workflow.md`、`memory/memory.md`、`skills/skills.md`、`archive/archive.md`。
-- 首次推送提交 6 条（新→旧）：`7b201b5`、`376cc8f`、`6316091`、`5a48bac`、`c94674b`、`dab2e7b`；本报告定稿追加第 7 条。
+- 首次推送提交 6 条（新→旧）：`7b201b5`、`376cc8f`、`6316091`、`5a48bac`、`c94674b`、`dab2e7b`；此后每次文档更新追加新 commit，完整列表见 `/commits`。
 - raw URL 均返回 HTTP 200：`memory/memory.md`、`ai-integration.md`、`identity/identity.md`。
 - 分支保护匿名 `GET /branches/main/protection` 返回 401（该端点需认证，不能据此判断是否启用）；**按第 7 节启用前，视为未启用**。
 
 **本地自检**
 
 - 交付目录 5、`.md` 7、非 `.md` 文件 0；首行标签 / `AI-META` / 日志区 / START / END 锚点均 7/7。
-- 三个点名占位符命中；`{{OWNER}}` / `{{DEFAULT_BRANCH}}` 残留 0；真实邮箱与令牌字符串 0；UTF-8 无 BOM。
+- 三个点名占位符命中；公开元数据占位符残留 0；真实邮箱与令牌字符串 0；UTF-8 无 BOM。
 
 ## 9. 自动回写日志（AI-APPEND / 仅追加）
 <!-- PAI:APPEND:START -->
