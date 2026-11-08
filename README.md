@@ -1,7 +1,7 @@
 # AI-REPORT: 搭建报告
 > AI-META: schema=pai-archive/v1; mode=report; auto_write=confirm; section=自动回写日志; eol=append-only; encoding=utf-8
 
-> 本报告由执行器生成，状态标注遵循「如实、不虚报」原则。定稿时间：2026-11-07（GMT+8）。
+> 本报告由执行器生成，状态标注遵循「如实、不虚报」原则。定稿：2026-11-07（GMT+8）；最近更新：2026-11-08（分支保护启用并经远端验证）。
 
 ## 0. 概览
 
@@ -19,7 +19,7 @@
 
 ## 1. 逐项状态清单
 
-状态图例：`[AUTO-OK]` 已自动完成并经远端验证 · `[USER-ONCE]` 需一次性动作 · `[RESERVED]` 厂商未开放公开 API，仅预留。
+状态图例：`[AUTO-OK]` 已自动完成并经远端验证 · `[USER-DONE]` 用户一次性动作已完成并经远端验证 · `[USER-ONCE]` 仍需一次性动作 · `[RESERVED]` 厂商未开放公开 API，仅预留。
 
 | # | 需求 | 状态 | 证据 / 说明 |
 | --- | --- | --- | --- |
@@ -31,7 +31,7 @@
 | 3 | `ai-integration.md` 读取配置 | `[AUTO-OK]` 文档 / `[USER-ONCE]` 生效 | ChatGPT Actions、Claude MCP、WorkBuddy raw URL 片段已写入且已填真实账号；平台侧需各粘贴一次 |
 | 3' | Muse / Dots 偏好同步 | `[RESERVED]` | 未找到公开可验证 API；仅 `disabled: true` 预留位，无真实端点 |
 | 3' ' | AI 完成任务后自动回写规则 | `[AUTO-OK]` 规则 / `[USER-ONCE]` 生效 | 映射表、追加条目格式、硬约束、冲突兜底已定义；执行需平台侧配置 |
-| 4 | 版本保护（防误删/防篡改） | `[USER-ONCE]` | 分支保护 JSON 与网页步骤已给出；**GitHub 侧尚未启用**，需你点击一次（见第 7 节） |
+| 4 | 版本保护（防误删/防篡改） | `[USER-DONE]` | 2026-11-08 用户网页启用；远端实测 `protected:true`、`enforce_admins:true`、禁强推、禁删分支，不要求 PR 审核（详见第 8 节） |
 | 4' | 所有修改自动生成提交记录 | `[AUTO-OK]` | 首次推送同步 6 条 commit；此后每次文档更新均追加新 commit（见 `/commits`） |
 | 4' ' | 一键回退至任意历史版本 | `[AUTO-OK]` 命令 | `git revert --no-commit <SHA>..HEAD`，保留完整审计链，与分支保护兼容 |
 | 5 | 搭建报告 | `[AUTO-OK]` | 本文件，含远端验证证据 |
@@ -102,14 +102,15 @@ git -c user.name="Personal AI Archive" -c user.email="archive@users.noreply.gith
 - `raw.githubusercontent.com` 有 CDN 缓存，删除内容后短期内仍可能可访问——不要抱着「先写再删」的想法放敏感信息。
 - **任何真实令牌都不得写入本仓库或任何 commit**。
 
-## 7. 剩余一次性动作
+## 7. 剩余一次性动作（仅平台侧）
 
 | # | 动作 | 位置 | 需 PAT |
 | --- | --- | --- | --- |
-| 1 | 启用分支保护：分支名 `main`，勾选「Do not allow bypassing the above settings」，**不勾** PR 审核、**不勾** Allow force pushes / Allow deletions | `https://github.com/laoshen1987/personal-ai-archive/settings/branches` | 否 |
-| 2 | 按第 4 节在需要的 AI 平台侧各配置一次 | 各平台 | 否 |
+| 1 | 按第 4 节在需要的 AI 平台侧各配置一次（按需，可长期跳过） | 各平台 | 否 |
 
-第 1 项是唯一影响「防误删/防篡改」的未完成项。启用后，Git 原生提交历史 + 禁强推 + 禁删分支共同构成版本保护；AI 仍可直接写入，无需 PR 审核。
+分支保护已于 2026-11-08 完成并经远端验证，**无需再做**（设置页：`https://github.com/laoshen1987/personal-ai-archive/settings/branches`）。
+
+版本保护现已完整生效：Git 原生提交历史 + 禁强推 + 禁删分支 + 管理员同受约束。实测未要求 PR 审核、未限制推送人，因此 **AI 仍可直接推送**；保护开启后的首次普通 `git push origin main` 成功，构成该结论的实测证据。
 
 ## 8. 验证证据
 
@@ -119,7 +120,8 @@ git -c user.name="Personal AI Archive" -c user.email="archive@users.noreply.gith
 - 递归 tree 返回 7 个 `.md`，`truncated:false`：`README.md`、`ai-integration.md`、`identity/identity.md`、`workflow/workflow.md`、`memory/memory.md`、`skills/skills.md`、`archive/archive.md`。
 - 首次推送提交 6 条（新→旧）：`7b201b5`、`376cc8f`、`6316091`、`5a48bac`、`c94674b`、`dab2e7b`；此后每次文档更新追加新 commit，完整列表见 `/commits`。
 - raw URL 均返回 HTTP 200：`memory/memory.md`、`ai-integration.md`、`identity/identity.md`。
-- 分支保护匿名 `GET /branches/main/protection` 返回 401（该端点需认证，不能据此判断是否启用）；**按第 7 节启用前，视为未启用**。
+- 分支保护（2026-11-08 复查）：公开端点 `GET /branches/main` 返回 `protected:true`；认证 `GET /branches/main/protection` 返回 HTTP 200，实测 `enforce_admins.enabled:true`、`allow_force_pushes.enabled:false`、`allow_deletions.enabled:false`、`required_pull_request_reviews:null`、`required_status_checks:null`、`restrictions:null`。
+- 保护开启后执行一次普通 `git push origin main` 成功，确认 AI 直接写入通道未被阻塞。
 
 **本地自检**
 

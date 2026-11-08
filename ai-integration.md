@@ -289,6 +289,8 @@ x-pai-reserved-sync:
 
 **无需 PAT 的网页设置路径**：仓库 → Settings → Branches → Add branch protection rule → Branch name pattern 填 `main` → 勾选「Do not allow bypassing the above settings」→ 不勾「Require a pull request before merging」，不勾「Allow force pushes」，不勾「Allow deletions」→ Create。
 
+**当前生效状态（2026-11-08 实测）**：用户已按上述路径启用。公开端点 `GET /branches/main` 返回 `protected:true`；认证 `GET /branches/main/protection` 返回 HTTP 200，实测 `enforce_admins:true`、禁强推、禁删分支，`required_pull_request_reviews` / `required_status_checks` / `restrictions` 均为 `null`，与上方 JSON 完全一致。保护开启后普通 `git push origin main` 成功，AI 直接写入通道正常。
+
 ### 5.2 提交记录
 
 Git 提交历史是版本保护的主体：每次 `git commit`、网页编辑文件、Contents API 的 `PUT` 都会生成一个 commit。这不是需要开启的开关，而是 Git 数据模型本身。配合上节的禁强推，历史不可被改写。
@@ -324,7 +326,7 @@ git -c user.name="Personal AI Archive" -c user.email="archive@users.noreply.gith
 | 生成 5 目录、7 个 Markdown 文件 | 本地执行器 + GitHub 连接器 | — | **是** |
 | 网页新建空公开仓库 | 用户 | 是 | 否（App 无建仓权限） |
 | 推送 7 个文件到 GitHub | AI（GCM 浏览器 OAuth / `git push`） | 否 | **是** |
-| 启用分支保护 | 用户（网页或 API） | 是 | 否 |
+| 启用分支保护 | 用户（网页） | 是 | 否（**已完成**，2026-11-08 经远端验证） |
 | 在 ChatGPT Actions 粘贴 OpenAPI | 用户 | 是 | 否 |
 | 在 Claude 配 MCP / 连接器 | 用户 | 是 | 否 |
 | 在 WorkBuddy 给出 raw URL（零配置）或建 mcp.json | 用户 | 是 | 否 |
@@ -364,7 +366,8 @@ git push -u origin main
 
 ```bash
 curl -sS "https://api.github.com/repos/laoshen1987/personal-ai-archive/contents/" | grep '"name"'
-curl -sS "https://api.github.com/repos/laoshen1987/personal-ai-archive/branches/main/protection" | grep -E 'enforce_admins|allow_force_pushes|allow_deletions'
+# 保护详情端点需认证（匿名返回 401）；匿名请用公开分支端点查 protected 标志：
+curl -sS "https://api.github.com/repos/laoshen1987/personal-ai-archive/branches/main" | grep '"protected"'
 curl -sS -o /dev/null -w "%{http_code}\n" "https://raw.githubusercontent.com/laoshen1987/personal-ai-archive/main/memory/memory.md"
 ```
 
